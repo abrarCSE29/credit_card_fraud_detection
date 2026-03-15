@@ -286,6 +286,31 @@ The project includes comprehensive unit tests covering:
 uv run pytest -v
 ```
 
+## CI/CD Pipeline
+
+The project includes GitHub Actions workflows for automated testing and deployment:
+
+### Workflows
+
+1. **Python Tests** (`.github/workflows/test.yml`)
+   - Runs on push/PR to `main` or `master` branches
+   - Sets up Python 3.13 and installs dependencies using `uv`
+   - Executes pytest with verbose output
+   - Includes optional linting with Ruff
+
+2. **Docker Build** (`.github/workflows/docker-build.yml`)
+   - Builds Docker image to validate Dockerfile
+   - Runs on push to `main`, tags, and pull requests
+   - Uses Docker Buildx for efficient caching
+   - No registry push (local build only for validation)
+
+
+### Deployment Workflow
+
+1. **Automated Testing**: Every push/PR triggers the test suite
+2. **Docker Validation**: Successful pushes to `main` build and validate the Docker image
+3. **Manual Deployment**: Docker images can be built and run locally when needed
+
 ## Key Findings
 
 ### Data Characteristics
