@@ -36,7 +36,10 @@ credit_card_fraud_detection/
 ├── models/
 │   └── linear_regression/     # Trained models and scalers
 ├── main.py                     # FastAPI entry point
+├── Dockerfile                  # Docker configuration
+├── .dockerignore               # Docker ignore file
 ├── pyproject.toml             # Project dependencies
+├── uv.lock                     # Dependency lock file
 ├── .python-version            # Python version
 
 ```
@@ -155,7 +158,27 @@ jupyter notebook notebooks/eda.ipynb
 jupyter notebook notebooks/training.ipynb
 ```
 
-### 3. API Inference (REST API)
+### 3. Docker Deployment
+Build and run the API using Docker:
+
+```bash
+# Build the Docker image
+docker build -t credit-card-fraud-detection .
+
+# Run the container
+docker run -d -p 8000:8000 --name fraud-detection-api credit-card-fraud-detection
+
+# View logs
+docker logs fraud-detection-api
+
+# Stop the container
+docker stop fraud-detection-api
+
+# Remove the container
+docker rm fraud-detection-api
+```
+
+### 4. API Inference (REST API)
 Start the FastAPI server:
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload

@@ -1,9 +1,9 @@
 import os
 import joblib
 import logging
-import numpy as np
+import numpy as np  # noqa: F401
 import pandas as pd
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
