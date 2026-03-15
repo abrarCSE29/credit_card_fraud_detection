@@ -24,6 +24,10 @@ The project uses the [Credit Card Fraud Detection dataset](https://www.kaggle.co
 
 ```
 credit_card_fraud_detection/
+├── api/
+│   ├── routes/                # API endpoints
+│   ├── services/              # Model service layer
+│   └── models.py              # Pydantic models
 ├── dataset/
 │   └── creditcard.csv          # Raw dataset
 ├── notebooks/
@@ -31,6 +35,7 @@ credit_card_fraud_detection/
 │   └── training.ipynb         # Model Training and Evaluation
 ├── models/
 │   └── linear_regression/     # Trained models and scalers
+├── main.py                     # FastAPI entry point
 ├── pyproject.toml             # Project dependencies
 ├── .python-version            # Python version
 
@@ -113,12 +118,12 @@ Due to class imbalance, we focus on:
 ### Using uv (Recommended)
 ```bash
 # Install dependencies
-uv add pandas scikit-learn matplotlib numpy mlflow joblib
+uv add pandas scikit-learn matplotlib numpy mlflow joblib fastapi uvicorn
 
-# Create virtual environment
-uv venv
+# Sync dependencies
+uv sync
 
-# Activate environment
+# Activate environment (optional, uv run works without activation)
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate     # Windows
@@ -150,37 +155,30 @@ jupyter notebook notebooks/eda.ipynb
 jupyter notebook notebooks/training.ipynb
 ```
 
-### 3. Model Inference
-The trained model can be used for fraud detection:
-
-```python
-import joblib
-import pandas as pd
-
-# Load model and scaler
-model = joblib.load('models/linear_regression/linear_reg_baseline_model.pkl')
-scaler = joblib.load('models/linear_regression/linear_reg_scaler.pkl')
-
-# Prepare transaction data
-transaction = {
-    'Time': 10000,
-    'V1': -1.359807,
-    'V2': -0.072781,
-    # ... other features
-    'Amount': 149.62
-}
-
-# Make prediction
-transaction_df = pd.DataFrame([transaction])
-transaction_scaled = scaler.transform(transaction_df)
-prediction = model.predict(transaction_scaled)
-probability = model.predict_proba(transaction_scaled)[0][1]
-
-if prediction[0] == 1:
-    print(f"Fraud detected! Probability: {probability:.4f}")
-else:
-    print(f"Legitimate transaction. Fraud probability: {probability:.4f}")
+### 3. API Inference (REST API)
+Start the FastAPI server:
+```bash
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+Access the API documentation:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+#### Example API Requests
+
+**Health Check:**
+```bash
+curl http://localhost:8000/health
+```
+
+**Single Transaction Prediction:**
+```bash
+curl -X POST http://localhost:8000/predict/ \
+  -H "Content-Type: application/json" \
+  -d '{"Time": 10000, "V1": -1.359807, "V2": -0.072781, "V3": 0.538343, "V4": -0.092781, "V5": 0.089271, "V6": 0.363787, "V7": 0.239599, "V8": 0.168037, "V9": 0.057921, "V10": 0.239599, "V11": -0.338321, "V12": 0.103463, "V13": 0.156522, "V14": 0.059921, "V15": -0.039493, "V16": -0.024221, "V17": -0.067321, "V18": -0.051221, "V19": -0.089271, "V20": 0.089271, "V21": 0.057921, "V22": -0.039493, "V23": -0.024221, "V24": -0.067321, "V25": -0.051221, "V26": -0.089271, "V27": 0.089271, "V28": 0.057921, "Amount": 149.62}'
+```
+
 
 ## Model Monitoring with MLflow
 
@@ -202,6 +200,26 @@ Access the MLflow UI at `http://127.0.0.1:5000` to view:
 
 ![MLflow Metrics](public/images/mlflow/mlflow-metrics.png)
 
+## API Endpoints
+
+### Health Check
+- **GET** `/health` - Check API and model status
+- Returns: `{"status": "healthy", "model_loaded": true}`
+
+### Predictions
+- **POST** `/predict/` - Predict fraud for a single transaction
+  - Request body: JSON with transaction features (Time, V1-V28, Amount)
+  - Returns: `{"prediction": 0, "probability": 0.007, "is_fraud": false}`
+
+- **POST** `/predict/batch` - Predict fraud for multiple transactions
+  - Request body: JSON array of transaction objects
+  - Returns: List of prediction results
+
+### Documentation
+- **GET** `/docs` - Swagger UI interactive documentation
+- **GET** `/redoc` - Alternative ReDoc documentation
+- **GET** `/openapi.json` - OpenAPI schema
+
 ## Key Findings
 
 ### Data Characteristics
@@ -209,11 +227,16 @@ Access the MLflow UI at `http://127.0.0.1:5000` to view:
 2. **Feature Scaling Required**: Amount feature has different scale than V1-V28
 3. **Temporal Patterns**: Fraudulent transactions show different time distributions
 
-
-
 ### Feature Importance
 - V1-V28 features contain valuable information for fraud detection
 - Amount and Time features provide additional discriminatory power
 - Standard scaling improves model convergence and performance
+
+## Technologies Used
+- **FastAPI**: Modern, high-performance web framework for building APIs
+- **Scikit-learn**: Machine learning library for model training and inference
+- **uv**: Fast Python package manager
+- **Joblib**: Model serialization and persistence
+- **Pydantic**: Data validation and settings management
 
 

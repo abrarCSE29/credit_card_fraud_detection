@@ -10,3 +10,7 @@ wheels/
 .venv
 dataset/*.csv
 dataset/*.zip
+
+
+# Agent Configs
+*md
