@@ -28,6 +28,9 @@ credit_card_fraud_detection/
 │   ├── routes/                # API endpoints
 │   ├── services/              # Model service layer
 │   └── models.py              # Pydantic models
+├── tests/                     # Unit tests
+│   ├── api/                   # API endpoint tests
+│   └── services/              # Service layer tests
 ├── dataset/
 │   └── creditcard.csv          # Raw dataset
 ├── notebooks/
@@ -202,6 +205,30 @@ curl -X POST http://localhost:8000/predict/ \
   -d '{"Time": 10000, "V1": -1.359807, "V2": -0.072781, "V3": 0.538343, "V4": -0.092781, "V5": 0.089271, "V6": 0.363787, "V7": 0.239599, "V8": 0.168037, "V9": 0.057921, "V10": 0.239599, "V11": -0.338321, "V12": 0.103463, "V13": 0.156522, "V14": 0.059921, "V15": -0.039493, "V16": -0.024221, "V17": -0.067321, "V18": -0.051221, "V19": -0.089271, "V20": 0.089271, "V21": 0.057921, "V22": -0.039493, "V23": -0.024221, "V24": -0.067321, "V25": -0.051221, "V26": -0.089271, "V27": 0.089271, "V28": 0.057921, "Amount": 149.62}'
 ```
 
+### 5. Running Unit Tests
+The project includes comprehensive unit tests for the API and services.
+
+**Run all tests:**
+```bash
+uv run pytest
+```
+
+**Run tests with verbose output:**
+```bash
+uv run pytest -v
+```
+
+**Run specific test files:**
+```bash
+uv run pytest tests/services/test_model_service.py
+uv run pytest tests/api/test_predictions.py
+```
+
+**Run a single test:**
+```bash
+uv run pytest tests/services/test_model_service.py::TestModelService::test_predict_success
+```
+
 
 ## Model Monitoring with MLflow
 
@@ -243,6 +270,22 @@ Access the MLflow UI at `http://127.0.0.1:5000` to view:
 - **GET** `/redoc` - Alternative ReDoc documentation
 - **GET** `/openapi.json` - OpenAPI schema
 
+## Testing
+
+The project includes comprehensive unit tests covering:
+- **Model Service**: Model loading, prediction logic, error handling
+- **API Endpoints**: Health check, single/batch predictions, validation
+
+**Test Coverage:**
+- 19 unit tests covering all critical functionality
+- Mock-based testing for isolated unit testing
+- Integration tests for API endpoints
+
+**Run Tests:**
+```bash
+uv run pytest -v
+```
+
 ## Key Findings
 
 ### Data Characteristics
@@ -261,5 +304,7 @@ Access the MLflow UI at `http://127.0.0.1:5000` to view:
 - **uv**: Fast Python package manager
 - **Joblib**: Model serialization and persistence
 - **Pydantic**: Data validation and settings management
+- **Pytest**: Testing framework for unit tests
+- **Docker**: Containerization for deployment
 
 
