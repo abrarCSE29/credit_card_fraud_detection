@@ -14,5 +14,8 @@ dataset/*.zip
 # Environment variables
 .env
 
+# Docker override files
+docker-compose.override.yml
+
 # Agent Configs
 *md

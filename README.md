@@ -39,8 +39,11 @@ credit_card_fraud_detection/
 ├── models/
 │   └── linear_regression/     # Trained models and scalers
 ├── main.py                     # FastAPI entry point
+├── config.py                   # Configuration settings
+├── docker-compose.yml          # Docker Compose configuration
 ├── Dockerfile                  # Docker configuration
 ├── .dockerignore               # Docker ignore file
+├── .env.example                # Environment variables template
 ├── pyproject.toml             # Project dependencies
 ├── uv.lock                     # Dependency lock file
 ├── .python-version            # Python version
@@ -167,23 +170,35 @@ jupyter notebook notebooks/training.ipynb
 ```
 
 ### 3. Docker Deployment
-Build and run the API using Docker:
+Build and run the API and Redis using Docker Compose:
 
 ```bash
-# Build the Docker image
-docker build -t credit-card-fraud-detection .
+# Build and start all services
+docker compose up -d --build
 
-# Run the container
-docker run -d -p 8000:8000 --name fraud-detection-api credit-card-fraud-detection
+# View logs for API
+docker compose logs api
 
-# View logs
-docker logs fraud-detection-api
+# View logs for Redis
+docker compose logs redis
 
-# Stop the container
-docker stop fraud-detection-api
+# Stop all services
+docker compose down
 
-# Remove the container
-docker rm fraud-detection-api
+# Stop and remove volumes
+docker compose down -v
+```
+
+**Note**: The Docker Compose setup exposes:
+- API on port 8000
+- Redis on port 6380 (mapped to internal port 6379)
+
+To use the Docker setup for rate limiting, ensure the API uses the Redis container:
+```bash
+# The docker-compose.yml sets these environment variables automatically:
+# REDIS_HOST=redis
+# REDIS_PORT=6379
+# REDIS_DB=0
 ```
 
 ### 4. API Inference (REST API)
@@ -375,13 +390,22 @@ Rate limiting settings are configured in `config.py` and can be customized via e
    ```
 3. Ensure Redis is running locally:
    ```bash
-   # Using Docker
+   # Using Docker (via Docker Compose - recommended)
+   docker compose up -d redis
+   
+   # Or using standalone Docker
    docker run -d -p 6379:6379 redis:alpine
    
    # Or install Redis locally
    # Ubuntu/Debian: sudo apt-get install redis-server
    # macOS: brew install redis
    ```
+4. **Using Docker Compose (Recommended)**:
+   The project includes a `docker-compose.yml` that runs both the API and Redis together:
+   ```bash
+   docker compose up -d --build
+   ```
+   This automatically configures the API to connect to the Redis container.
 
 ### Rate Limit Response
 When rate limit is exceeded:
