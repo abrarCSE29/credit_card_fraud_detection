@@ -1,8 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import logging
+import redis
+from slowapi.errors import RateLimitExceeded
 
+from config import REDIS_URL, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW
+from api.limiter import limiter
 from api.routes.predictions import router as predict_router
 from api.services.model_service import model_service
 from api.models import HealthResponse
@@ -10,6 +15,15 @@ from api.models import HealthResponse
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Redis connection for rate limiting
+try:
+    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+    redis_client.ping()
+    logger.info(f"Successfully connected to Redis at {REDIS_URL}")
+except redis.ConnectionError as e:
+    logger.error(f"Failed to connect to Redis: {e}")
+    raise
 
 
 @asynccontextmanager
@@ -24,6 +38,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown: Cleanup if needed
     logger.info("Shutting down...")
+    redis_client.close()
 
 
 app = FastAPI(
@@ -32,6 +47,21 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Set limiter on app state
+app.state.limiter = limiter
+
+
+# Rate limit exception handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": f"Rate limit exceeded. Max {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW} seconds."
+        },
+    )
+
 
 # CORS middleware
 app.add_middleware(

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
+from config import RATE_LIMIT_STRING
+from api.limiter import limiter
 from api.models import Transaction, PredictionResponse
 from api.services.model_service import model_service
 
@@ -12,7 +14,8 @@ router = APIRouter(prefix="/predict", tags=["predictions"])
     summary="Predict fraud for a single transaction",
     description="Analyze a credit card transaction and predict if it's fraudulent",
 )
-async def predict_single(transaction: Transaction):
+@limiter.limit(RATE_LIMIT_STRING)
+async def predict_single(request: Request, transaction: Transaction):
     """
     Predict whether a single credit card transaction is fraudulent.
 

@@ -124,7 +124,7 @@ Due to class imbalance, we focus on:
 ### Using uv (Recommended)
 ```bash
 # Install dependencies
-uv add pandas scikit-learn matplotlib numpy mlflow joblib fastapi uvicorn
+uv add pandas scikit-learn matplotlib numpy mlflow joblib fastapi uvicorn slowapi redis python-dotenv
 
 # Sync dependencies
 uv sync
@@ -133,6 +133,11 @@ uv sync
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate     # Windows
+
+# Copy environment variables template
+cp .env.example .env
+
+# Ensure Redis is running (see Rate Limiting section below)
 ```
 
 ### Using pip
@@ -331,5 +336,59 @@ The project includes GitHub Actions workflows for automated testing and deployme
 - **Pydantic**: Data validation and settings management
 - **Pytest**: Testing framework for unit tests
 - **Docker**: Containerization for deployment
+- **SlowAPI**: Rate limiting middleware with Redis backend
+- **Redis**: In-memory data store for distributed rate limiting
+
+## Rate Limiting
+
+The API implements rate limiting using **SlowAPI** with **Redis** as the backend storage.
+
+### Configuration
+Rate limiting settings are configured in `config.py` and can be customized via environment variables:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `RATE_LIMIT_REQUESTS` | Max requests per window | 5 |
+| `RATE_LIMIT_WINDOW` | Time window in seconds | 2 |
+| `REDIS_HOST` | Redis server host | localhost |
+| `REDIS_PORT` | Redis server port | 6379 |
+| `REDIS_DB` | Redis database number | 0 |
+
+### Rate Limit Behavior
+- **Endpoint**: `/predict/` (single transaction prediction)
+- **Limit**: 5 requests per 2 seconds per IP address
+- **Scope**: Per IP address (using `X-Forwarded-For` header if behind proxy)
+- **Response**: Returns `429 Too Many Requests` when limit exceeded
+
+### Environment Setup
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Update `.env` with your Redis configuration:
+   ```env
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_DB=0
+   RATE_LIMIT_REQUESTS=5
+   RATE_LIMIT_WINDOW=2
+   ```
+3. Ensure Redis is running locally:
+   ```bash
+   # Using Docker
+   docker run -d -p 6379:6379 redis:alpine
+   
+   # Or install Redis locally
+   # Ubuntu/Debian: sudo apt-get install redis-server
+   # macOS: brew install redis
+   ```
+
+### Rate Limit Response
+When rate limit is exceeded:
+```json
+{
+  "detail": "Rate limit exceeded. Max 5 requests per 2 seconds."
+}
+```
 
 

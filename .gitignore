@@ -11,6 +11,8 @@ wheels/
 dataset/*.csv
 dataset/*.zip
 
+# Environment variables
+.env
 
 # Agent Configs
 *md
