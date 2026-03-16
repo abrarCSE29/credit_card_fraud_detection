@@ -26,10 +26,24 @@ jobs:
     - name: Install dependencies
       run: uv sync
 
+    - name: Start Redis for rate limiting tests
+      run: |
+        docker run -d -p 6379:6379 --name redis redis:alpine
+        sleep 2
+        docker ps
+
     - name: Run tests
+      env:
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        REDIS_DB: 0
       run: uv run pytest -v
 
     - name: Lint with Ruff (optional)
       run: |
         uv run pip install ruff
         uv run ruff check . || true
+
+    - name: Stop Redis
+      if: always()
+      run: docker stop redis || true

@@ -1,4 +1,4 @@
-name: Docker Build
+name: Docker Build and Compose Test
 
 on:
   push:
@@ -26,3 +26,46 @@ jobs:
         tags: credit-card-fraud-detection:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+  test-docker-compose:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Start services with Docker Compose
+      run: |
+        docker compose up -d
+        sleep 10
+
+    - name: Check services status
+      run: docker compose ps
+
+    - name: Test health endpoint
+      run: |
+        curl -f http://localhost:8000/health || exit 1
+
+    - name: Test rate limiting
+      run: |
+        for i in {1..5}; do
+          curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/predict/ \
+            -H "Content-Type: application/json" \
+            -d '{"Time": 10000, "V1": -1.359807, "V2": -0.072781, "V3": 0.538343, "V4": -0.092781, "V5": 0.089271, "V6": 0.363787, "V7": 0.239599, "V8": 0.168037, "V9": 0.057921, "V10": 0.239599, "V11": -0.338321, "V12": 0.103463, "V13": 0.156522, "V14": 0.059921, "V15": -0.039493, "V16": -0.024221, "V17": -0.067321, "V18": -0.051221, "V19": -0.089271, "V20": 0.089271, "V21": 0.057921, "V22": -0.039493, "V23": -0.024221, "V24": -0.067321, "V25": -0.051221, "V26": -0.089271, "V27": 0.089271, "V28": 0.057921, "Amount": 149.62}'
+        done
+
+    - name: Verify rate limiting (6th request should be 429)
+      run: |
+        status=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8000/predict/ \
+          -H "Content-Type: application/json" \
+          -d '{"Time": 10000, "V1": -1.359807, "V2": -0.072781, "V3": 0.538343, "V4": -0.092781, "V5": 0.089271, "V6": 0.363787, "V7": 0.239599, "V8": 0.168037, "V9": 0.057921, "V10": 0.239599, "V11": -0.338321, "V12": 0.103463, "V13": 0.156522, "V14": 0.059921, "V15": -0.039493, "V16": -0.024221, "V17": -0.067321, "V18": -0.051221, "V19": -0.089271, "V20": 0.089271, "V21": 0.057921, "V22": -0.039493, "V23": -0.024221, "V24": -0.067321, "V25": -0.051221, "V26": -0.089271, "V27": 0.089271, "V28": 0.057921, "Amount": 149.62}')
+        if [ "$status" != "429" ]; then
+          echo "Expected 429 but got $status"
+          exit 1
+        fi
+        echo "Rate limiting working correctly"
+
+    - name: Stop services
+      if: always()
+      run: docker compose down

@@ -315,21 +315,26 @@ The project includes GitHub Actions workflows for automated testing and deployme
 1. **Python Tests** (`.github/workflows/test.yml`)
    - Runs on push/PR to `main` or `master` branches
    - Sets up Python 3.13 and installs dependencies using `uv`
+   - Starts Redis container for rate limiting tests
    - Executes pytest with verbose output
    - Includes optional linting with Ruff
+   - Cleans up Redis container after tests
 
-2. **Docker Build** (`.github/workflows/docker-build.yml`)
+2. **Docker Build and Compose Test** (`.github/workflows/docker-build.yml`)
    - Builds Docker image to validate Dockerfile
+   - Tests Docker Compose setup with Redis integration
    - Runs on push to `main`, tags, and pull requests
    - Uses Docker Buildx for efficient caching
+   - Validates rate limiting in Docker environment
    - No registry push (local build only for validation)
 
 
 ### Deployment Workflow
 
-1. **Automated Testing**: Every push/PR triggers the test suite
-2. **Docker Validation**: Successful pushes to `main` build and validate the Docker image
-3. **Manual Deployment**: Docker images can be built and run locally when needed
+1. **Automated Testing**: Every push/PR triggers the test suite with Redis integration
+2. **Docker Validation**: Successful pushes to `main` build and validate the Docker Compose setup
+3. **Rate Limiting Validation**: Docker workflow tests rate limiting functionality
+4. **Manual Deployment**: Docker images can be built and run locally when needed
 
 ## Key Findings
 
